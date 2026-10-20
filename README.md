@@ -90,8 +90,9 @@ Windows verification on 20 October 2026:
 | Isolated local WebView fixture | **34 checks passed**, including navigation, PNG/file readback, profile fields, nickname confirmation, avatar selection, crop/save/readback stages, and guarded-action rejections. |
 | Live TikTok readback | Profile navigation, own-profile indicators, snapshots, screenshots, and window restoration were observed. |
 | Live upload page | The upload form was observed; a real user video was not sent as part of that verification. |
+| Live profile edit | Field staging, image selection, crop, and nickname confirmation were observed. TikTok then showed authentication/sign-up UI; persistence remained unverified pending manual sign-in. |
 
-The profile-editing checks above use an isolated local fixture; they do not establish a successful live profile save. These are bounded observations, not a guarantee of account availability, permanent login, upload success, or support for future TikTok DOM changes. Local screenshots, logs, profile data, and transport credentials are excluded from this public source tree.
+The 34 automated profile/control checks use an isolated local fixture. The separate live profile-edit observation does not establish a successful persisted save. These are bounded observations, not a guarantee of account availability, permanent login, upload success, or support for future TikTok DOM changes. Local screenshots, logs, profile data, and transport credentials are excluded from this public source tree.
 
 ## Build requirements
 

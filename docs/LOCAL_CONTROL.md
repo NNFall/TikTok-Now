@@ -171,7 +171,8 @@ Windows verification on 20 October 2026 recorded:
 - **20 release unit tests passed:** external URL schemes, CLI/profile-command validation, paths, limits, JavaScript quoting, sanitization, and a real native named-pipe round trip, shutdown, and stale descriptor.
 - **34 local WebView integration checks passed:** snapshots, input events, safe navigation, PNG output, synthetic file and avatar selection, profile fields, nickname confirmation, crop/save/readback stages, and guarded rejections. No test file was transmitted.
 - **Live readback:** own-profile navigation, visible edit-profile indicators, screenshots, restoration of the existing window, and a loaded upload form.
-- **Not established by those checks:** real user-video transfer, processing or publication; indefinite login persistence; cross-platform compatibility of the additions.
+- **Separate live profile-edit observation:** form fields, image selection, crop, and nickname confirmation were exercised. TikTok then displayed authentication/sign-up UI. Persisted profile changes were not verified before manual sign-in, and authentication was not automated.
+- **Not established by those checks:** persisted live profile changes after that authentication prompt; real user-video transfer, processing or publication; indefinite login persistence; cross-platform compatibility of the additions.
 
 The fixture assets are `frontend/control-fixture.html` and `frontend/control-fixture.js`. Run the app with `--control-test` only in an isolated test environment: it uses a separate WebView profile, but the same-user transport must not be shared with a live control instance.
 
