@@ -1,5 +1,6 @@
 //! Opt-in, same-user local control. No TCP listener, arbitrary script command,
-//! page-facing Tauri command, cookie export, or publishing command is exposed.
+//! page-facing Tauri command or cookie export is exposed. Publication uses a
+//! separate typed command with exact-caption and preview readiness checks.
 //! The host callback must implement its own action/authentication restrictions
 //! and must finish within the deadline; timing out cannot undo a started action.
 
@@ -330,6 +331,9 @@ pub fn validate_request(value: &Value) -> Result<(), String> {
         "upload-file" => &["command", "selector", "path"],
         "profile-set" => &["command", "field", "text"],
         "profile-avatar" => &["command", "path"],
+        "upload-inspect" | "upload-diagnostics" | "upload-prepare" | "publication-status" => &["command"],
+        "upload-caption" | "upload-caption-check" | "publish-video" => &["command", "text"],
+        "upload-guidance" => &["command", "action"],
         _ => return Err("Unsupported control command".into()),
     };
     if object.len() != keys.len() || object.keys().any(|key| !keys.contains(&key.as_str())) {
@@ -352,6 +356,12 @@ pub fn validate_request(value: &Value) -> Result<(), String> {
     }
     if command == "profile-set" {
         crate::profile_scripts::validate_field(object["field"].as_str().unwrap(), object["text"].as_str().unwrap())?;
+    }
+    if matches!(command,"upload-caption" | "upload-caption-check" | "publish-video") {
+        crate::publish_scripts::validate_caption(object["text"].as_str().unwrap())?;
+    }
+    if command == "upload-guidance" && !matches!(object["action"].as_str().unwrap(),"cancel-auto-check" | "acknowledge-tutorial") {
+        return Err("Unsupported upload guidance action".into());
     }
     if matches!(command, "screenshot" | "upload-file" | "profile-avatar") {
         let path = Path::new(object["path"].as_str().unwrap());
@@ -560,6 +570,14 @@ fn parse_cli(args: &[String]) -> Result<Value,String> {
         ["profile-crop-inspect"] => json!({"command":"profile-crop-inspect"}),
         ["profile-save"] => json!({"command":"profile-save"}),
         ["profile-confirm-name"] => json!({"command":"profile-confirm-name"}),
+        ["upload-inspect"] => json!({"command":"upload-inspect"}),
+        ["upload-diagnostics"] => json!({"command":"upload-diagnostics"}),
+        ["upload-prepare"] => json!({"command":"upload-prepare"}),
+        ["upload-caption",text] => json!({"command":"upload-caption","text":text}),
+        ["upload-caption-check",text] => json!({"command":"upload-caption-check","text":text}),
+        ["upload-guidance",action] => json!({"command":"upload-guidance","action":action}),
+        ["publish-video",text] => json!({"command":"publish-video","text":text}),
+        ["publication-status"] => json!({"command":"publication-status"}),
         _ => return Err("Use status, show, snapshot, navigate URL, screenshot ABSOLUTE_PNG, click SELECTOR, fill SELECTOR TEXT, upload-file SELECTOR ABSOLUTE_FILE, profile-open, profile-inspect, profile-readback, profile-set FIELD TEXT, profile-avatar ABSOLUTE_IMAGE, profile-crop, profile-save, profile-confirm-name, or --request JSON".into()),
     };
     validate_request(&request)?;
@@ -623,6 +641,19 @@ mod tests {
         assert!(validate_request(&json!({"command":"profile-save","selector":"button"})).is_err());
         assert!(parse_cli(&args(&["profile-avatar",r"D:\assets\avatar.png"])).is_ok());
         assert!(parse_cli(&args(&["profile-avatar",r"D:\assets\movie.mp4"])).is_err());
+    }
+
+    #[test]
+    fn publication_commands_are_typed_and_require_an_expected_caption() {
+        assert!(parse_cli(&args(&["upload-inspect"])).is_ok());
+        assert!(parse_cli(&args(&["publication-status"])).is_ok());
+        assert!(parse_cli(&args(&["publish-video","A film scene"])).is_ok());
+        assert!(parse_cli(&args(&["publish-video"])).is_err());
+        assert!(parse_cli(&args(&["publish-video",""])).is_err());
+        assert!(parse_cli(&args(&["upload-guidance","click-any-button"])).is_err());
+        assert!(parse_cli(&args(&["upload-guidance","cancel-auto-check"])).is_ok());
+        assert!(validate_request(&json!({"command":"publish-video","text":"A caption","selector":"button"})).is_err());
+        assert!(validate_request(&json!({"command":"upload-inspect","script":"anything"})).is_err());
     }
 
     #[test]

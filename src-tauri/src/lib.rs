@@ -10,6 +10,8 @@ pub mod control_transport;
 mod control_webview;
 #[cfg(windows)]
 mod profile_scripts;
+#[cfg(windows)]
+mod publish_scripts;
 
 use std::sync::{
     atomic::{AtomicBool, AtomicU32, Ordering},

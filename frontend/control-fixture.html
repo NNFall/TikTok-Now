@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en" data-control-fixture="true"><head><meta charset="utf-8"><title>TikTok-Now local control test</title></head>
 <body><h1>Local control fixture</h1><p>This page does not send files to any service.</p>
-<label>Caption <input id="caption" type="text"></label>
+<label id="fixture-basic-caption">Caption <input id="caption" type="text"></label>
 <button id="fixture-button" type="button">Test navigation action</button>
-<button id="fixture-auth" type="button">Show simulated login dialog</button>
+<button id="fixture-auth" style="position:fixed;top:10px;right:10px;z-index:10000" type="button">Show simulated login dialog</button>
 <button id="publish" type="submit"><span id="publish-child">Publish</span></button>
 <input id="fixture-file" type="file" accept="video/*">
 <output id="fixture-result" data-e2e="fixture-result">Not clicked</output>
@@ -25,6 +25,22 @@
 <p data-e2e="set-username-popup-title">Установить никнейм?</p>
 <p data-e2e="set-username-popup-desc">Никнейм можно менять не чаще, чем раз в 7 дн.</p>
 <button data-e2e="set-username-popup-confirm" type="button">Подтвердить</button></div>
-<div id="fixture-login" role="dialog" hidden><h2>Log in</h2><input type="tel" autocomplete="one-time-code"></div>
+<button id="fixture-upload-mode" type="button">Show local upload form</button>
+<section id="fixture-upload" hidden>
+<div data-e2e="mobile_preview_container"><video id="fixture-video" style="width:80px;height:80px"></video><div id="fixture-canvas-player" hidden><canvas width="1080" height="1440" style="width:80px;height:100px"></canvas><span id="fixture-clock">00:00:00 / 00:01:02</span><button type="button">Воспроизвести</button><button type="button">Заглушить</button><button type="button">Развернуть</button></div></div>
+<div><label id="fixture-upload-label">Описание</label><div id="fixture-upload-caption" class="public-DraftEditor-content" aria-labelledby="fixture-upload-label" contenteditable="true" style="min-height:60px;width:500px;border:1px solid">Default local caption</div></div>
+<button id="fixture-post" data-e2e="post_video_button" type="button">Опубликовать</button>
+<button id="fixture-upload-progress" type="button">Toggle simulated progress</button>
+<button id="fixture-canvas-mode" type="button">Toggle local canvas renderer</button>
+<button id="fixture-canvas-clock" type="button">Toggle invalid canvas clock</button>
+<button id="fixture-auto-prompt" type="button">Show automatic check prompt</button>
+<button id="fixture-tutorial-prompt" type="button">Show publication tutorial</button>
+<div id="fixture-progress" role="progressbar" aria-valuenow="50" aria-valuemax="100" style="height:10px;width:100px" hidden></div>
+</section>
+<div id="fixture-auto" role="dialog" style="position:fixed;inset:20% 20%;background:white;border:1px solid" hidden>
+<h2>Включить автоматическую проверку контента?</h2><p>Проверим видео на нарушение авторских прав.</p>
+<input type="checkbox" checked><button id="fixture-auto-cancel" type="button">Отмена</button><button type="button">Включить</button></div>
+<aside id="fixture-tutorial" style="position:fixed;inset:20% 20%;background:white;border:1px solid" hidden><p>Настройки публикации видео доступны здесь.</p><svg width="20" height="20"></svg><button id="fixture-tutorial-ack" type="button">Понятно</button></aside>
+<div id="fixture-login" role="dialog" style="position:fixed;inset:20% 20%;background:white;border:1px solid" hidden><h2>Log in</h2><input type="tel" autocomplete="one-time-code"></div>
 <script src="control-fixture.js"></script>
 </body></html>

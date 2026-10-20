@@ -23,7 +23,7 @@ The base is upstream tag `v2.1.0`, commit `2445a7a3a7d200a124a9319b581e9488f0ec2
 
 ## What this fork adds
 
-- **Direct local control:** inspect the current page, navigate TikTok, capture PNG screenshots, fill ordinary fields, select a local video file, and edit your public profile.
+- **Direct local control:** inspect the current page, navigate TikTok, capture PNG screenshots, fill ordinary fields, select a local video file, edit your public profile, and explicitly request publication of an authorized draft.
 - **A separate CLI:** `tiktok-now-ctl.exe` returns structured JSON. No mouse automation or desktop accessibility tree is required.
 - **An opt-in transport:** start the app with `--control` to enable a same-user Windows named pipe. There is no listening TCP/CDP port or MCP server.
 - **Bounded actions:** TikTok HTTPS URL validation, constrained commands, authentication-field guards, output limits, and timeouts.
@@ -75,10 +75,16 @@ The screenshot destination must be an absolute local PNG path whose parent exist
 | `profile-crop-inspect` / `profile-crop` | Inspect or apply a recognized avatar crop. |
 | `profile-save` | Request saving the profile form. |
 | `profile-confirm-name` | Confirm TikTok's recognized nickname-change prompt when required. |
+| `upload-inspect` / `upload-diagnostics` | Inspect bounded upload state, readiness, guidance, and errors. |
+| `upload-prepare` | Scroll the recognized caption editor into view without changing settings. |
+| `upload-caption TEXT` / `upload-caption-check TEXT` | Set a caption or compare it with the exact expected text. |
+| `upload-guidance ACTION` | Dismiss one recognized opt-in/tutorial surface using a fixed action. |
+| `publish-video EXPECTED_CAPTION` | Request publication once, only for the exact authorized caption and a ready preview. |
+| `publication-status` | Read visible publication notices and relevant content/profile video links. |
 
 See [the local-control guide](docs/LOCAL_CONTROL.md) for the JSON form, transport details, build requirements, and action limits.
 
-Selecting a file on TikTok's live upload page can start transferring it immediately. A successful file-selection response does not establish upload completion, platform acceptance, or publication. This fork does not expose a publish command.
+Selecting a file on TikTok's live upload page can start transferring it immediately. A file-selection response does not establish upload completion, platform acceptance, or publication; TikTok can also reset its file input after selection, making readback uncertain even when a preview is visible. The separate `publish-video` command requires the exact expected caption, a recognized enabled publication button, a ready video preview, and no observed unfinished upload/processing indicators, blocking guidance/dialogs, or recognized errors. It is an explicit final action, not automatic publication. Its request receipt is not proof of a published video, and uncertain actions are never automatically retried.
 
 ## Verification
 
@@ -86,10 +92,12 @@ Windows verification on 20 October 2026:
 
 | Check | Observed result |
 |---|---|
-| Rust release unit tests | **20 passed**, including URL guards, command validation, profile-field limits, JavaScript quoting, sanitized errors, and a real named-pipe round trip. |
-| Isolated local WebView fixture | **36 checks passed**, including both profile title/subtitle orders, navigation, PNG/file readback, profile fields, nickname confirmation, avatar selection, crop/save/readback stages, and guarded-action rejections. |
+| Full Rust release unit tests | **26 passed** on the preceding release, before the final canvas-preview JavaScript adaptation. |
+| Final publication-module checks | **5** standalone Rust tests, **57** mock-DOM checks, and **9** JavaScript syntax checks passed after that adaptation. |
+| Latest installed Windows WebView fixture | **63 checks passed**, including native multiline captions, recognized canvas readiness/zero-clock rejection, publication guards, profile fields, PNG/file readback, and crop/save/readback stages. |
 | Live TikTok readback | Profile navigation, own-profile indicators, snapshots, screenshots, and window restoration were observed. |
-| Live upload page | The upload form was observed; a real user video was not sent as part of that verification. |
+| Live upload page | The selected-video preview and exact native caption readback were observed, including a later read after more than two minutes. The input can reset after selection; final publication still requires separate post readback. |
+| Live publication | Not established by the reported upload/fixture checks. A publication request and a verified new post are separate outcomes. |
 | Live profile edit | Field staging, avatar selection/crop, and nickname confirmation were observed. After a full app quit/restart, the signed-in own profile showed the intended display name, bio, and avatar. |
 
 The automated profile/control checks use an isolated local fixture. Separate live readback after a full app restart confirmed the requested profile changes. Authentication/sign-up UI had appeared during the earlier save flow; it was not treated as a successful save until the later signed-in profile was actually read. These are bounded observations, not a guarantee of account availability, permanent login, upload success, or support for future TikTok DOM changes. Local screenshots, logs, profile data, and transport credentials are excluded from this public source tree.

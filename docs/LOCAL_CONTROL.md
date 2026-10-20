@@ -94,9 +94,69 @@ On the currently open upload document:
 .\target\release\tiktok-now-ctl.exe upload-file 'input[type="file"]' 'C:\TikTokReview\clip.mp4'
 ```
 
-File selection checks the local file and reads back its selected name and size. The current implementation targets a file input in the top-level document; a cross-origin iframe is outside that implementation's verified scope.
+File selection checks the local file and attempts to read back its selected name and size. The current implementation targets a file input in the top-level document; a cross-origin iframe is outside that implementation's verified scope. TikTok can reset that input after handling the selection. In that case, selection readback can be uncertain even when the live page shows the intended video preview: inspect the upload state before deciding what happened, and do not automatically select the file again.
 
-Selecting the file on a live upload page can immediately start a transfer. File selection, transfer completion, processing completion, platform acceptance, and publication are separate states. No publish command is exposed, and an uncertain upload/click is not automatically retried.
+Selecting the file on a live upload page can immediately start a transfer. File selection, transfer completion, processing completion, platform acceptance, and publication are separate states. Publication is available only through the separate typed final action below; an uncertain upload or publication request is not automatically retried.
+
+### Inspect and prepare an upload
+
+These commands operate on recognized ordinary TikTok upload routes:
+
+```powershell
+.\target\release\tiktok-now-ctl.exe upload-inspect
+.\target\release\tiktok-now-ctl.exe upload-diagnostics
+.\target\release\tiktok-now-ctl.exe upload-prepare
+.\target\release\tiktok-now-ctl.exe upload-caption 'A memorable movie scene. #movies'
+.\target\release\tiktok-now-ctl.exe upload-caption-check 'A memorable movie scene. #movies'
+.\target\release\tiktok-now-ctl.exe upload-inspect
+```
+
+`upload-inspect` reports the caption editor's metadata, selected-file metadata, decoded preview readiness, progress, recognized errors, publication-button state, and blocking guidance. `upload-diagnostics` adds bounded structural metadata for supported upload elements, including read-only canvas and open-shadow-root observations. The presence of a canvas or shadow root does not by itself establish a ready decoded preview. These commands do not expose cookies, session storage, request tokens, or video-source URLs.
+
+`upload-prepare` only scrolls the recognized caption editor into view. It does not change caption text, visibility, scheduling, or content-check preferences. `upload-caption` prepares and focuses the recognized caption editor, inserts text through WebView2's native `Input.insertText` path, and performs a separate exact readback. Draft.js block text is read with its line breaks preserved; the command does not insert raw HTML. `upload-caption-check` compares the current caption with the supplied text and returns a boolean plus lengths without dumping its contents.
+
+The local caption limit is 2,200 UTF-16 units, with a nonempty value required; the live field's maximum is checked too. This is a conservative client bound, not a statement of TikTok's current service limit.
+
+Two fixed guidance actions are supported when their specific recognized panels are present:
+
+| Action | Effect |
+|---|---|
+| `upload-guidance cancel-auto-check` | Cancel the observed automatic-content-check opt-in prompt; do not enable or disable an account preference. |
+| `upload-guidance acknowledge-tutorial` | Acknowledge the observed informational upload tutorial. |
+
+Neither action clicks Publish or accepts an unknown dialog. Inspect again after a guidance action. Unknown, ambiguous, disabled, authentication-related, or unfinished states fail closed.
+
+### Request publication explicitly
+
+`publish-video` is a separate final command for a video and caption the account owner has **explicitly authorized for publication**. It is not part of navigation, file selection, caption filling, or the generic `click` command. It uses the draft's current visibility and other settings rather than silently changing them.
+
+After reviewing the selected video, its ready preview, caption match, and current settings:
+
+```powershell
+.\target\release\tiktok-now-ctl.exe publish-video 'A memorable movie scene. #movies'
+.\target\release\tiktok-now-ctl.exe publication-status
+```
+
+Before dispatch, the command requires:
+
+- Exactly one recognized caption editor whose text matches `EXPECTED_CAPTION`.
+- A recognized enabled `post_video_button` with a publication label.
+- A displayed ready preview through one of the two recognized routes described below.
+- No observed unfinished progress indicator or recognized upload/processing label, blocking dialog/guidance, or recognized upload error.
+- No publication request already marked in the current document.
+
+
+The preview predicate accepts either:
+
+- A displayed HTML video with `readyState >= 2`, positive duration, and positive decoded frame dimensions.
+- Exactly one displayed `mobile_preview_container` containing exactly one displayed canvas with positive dimensions, exactly one parseable `HH:MM:SS / HH:MM:SS` clock pair with a positive total duration and current time within its range, and recognized play/pause plus mute/unmute controls.
+
+The canvas route establishes **recognized player UI readiness**, not an HTML video's decoder state or a pixel analysis of the film frame. A generic canvas, ambiguous container/canvas/clock, zero total duration, or missing player controls is not sufficient. Uploaded-file labels and filenames are available in diagnostics; they are observations rather than a new-publication receipt.
+The pending marker is set **before** clicking. A successful command receipt reports `publicationRequested: true` and `published: false`: it establishes a request, not a completed publication. The marker prevents another request in that document, not duplicate posts across reloads or restarts. A timeout or thrown click can be uncertain; inspect the result before considering any further action. There is no automatic retry.
+
+`publication-status` is read-only and supports recognized upload, content-list, profile, and video routes. It reports visible notices, headings, relevant video links, and bounded content rows. Read back the actual new post and its current state to establish the outcome. A link, preview, request receipt, absence of errors, or an older post is not sufficient proof of a successful new publication. Publication is also not copyright clearance.
+
+No arbitrary JavaScript, arbitrary button selector, network session API, or general dialog-confirmation command is introduced by this workflow.
 
 ### Edit your public profile
 
@@ -170,11 +230,12 @@ A timeout cannot undo an action that already began. After an uncertain result, i
 
 Windows verification on 20 October 2026 recorded:
 
-- **20 release unit tests passed:** external URL schemes, CLI/profile-command validation, paths, limits, JavaScript quoting, sanitization, and a real native named-pipe round trip, shutdown, and stale descriptor.
-- **36 local WebView integration checks passed:** both profile title/subtitle orders, snapshots, input events, safe navigation, PNG output, synthetic file and avatar selection, profile fields, nickname confirmation, crop/save/readback stages, and guarded rejections. No test file was transmitted.
-- **Live readback:** own-profile navigation, visible edit-profile indicators, screenshots, restoration of the existing window, and a loaded upload form.
+- **26 full release unit tests passed on the preceding release, before the final canvas-preview JavaScript adaptation:** external URL schemes, typed CLI/profile/publication-command validation, caption/profile limits, paths, JavaScript quoting, sanitization, and a real native named-pipe round trip, shutdown, and stale descriptor.
+- **Final publication-module checks passed after that adaptation:** 5 standalone Rust tests, 57 mock-DOM checks, and 9 JavaScript syntax checks. This is a separate scope from the preceding full Rust run.
+- **63 native WebView fixture checks passed against the final installed Windows GUI:** native multiline caption insertion, recognized canvas readiness and zero-total-clock rejection, typed publication guards, both profile title/subtitle orders, snapshots, safe navigation, PNG output, synthetic file/avatar selection, profile fields, nickname confirmation, crop/save/readback stages, and guarded rejections. No fixture file was transmitted or posted.
+- **Live readback:** own-profile navigation, edit-profile indicators, screenshots, window restoration, and the upload form. The selected-video preview and native caption text were observed with exact caption comparisons, including another successful read more than two minutes later. These observations did not establish publication.
 - **Separate live profile-edit observation:** form fields, avatar selection/crop, and nickname confirmation were exercised. Authentication/sign-up UI appeared during the save flow. After the user fully quit and reopened the app, the signed-in own profile was re-read and the intended display name, bio, and avatar were present. That later observation established persistence across that restart; authentication was not automated.
-- **Not established by those checks:** real user-video transfer, processing or publication; indefinite login or profile persistence; cross-platform compatibility of the additions.
+- **Not established by those checks:** completed transfer, processing or publication of a real user video; indefinite login or profile persistence; cross-platform compatibility of the additions.
 
 The fixture assets are `frontend/control-fixture.html` and `frontend/control-fixture.js`. Run the app with `--control-test` only in an isolated test environment: it uses a separate WebView profile, but the same-user transport must not be shared with a live control instance.
 

@@ -95,6 +95,7 @@ fn expression(window: &tauri::WebviewWindow, script: &str, limits: Limits, by_va
             return Err(first.to_owned());
         }
         if let Some(safe) = crate::profile_scripts::public_error(first) { return Err(safe.to_owned()); }
+        if let Some(safe) = crate::publish_scripts::public_error(first) { return Err(safe.to_owned()); }
         return Err("Page rejected operation; check page, selector, and manual-login state".into());
     }
     if by_value { Ok(value.pointer("/result/value").cloned().unwrap_or(Value::Null)) }
@@ -149,7 +150,7 @@ return {url:location.origin+location.pathname,elements};
             let selector = serde_json::to_string(string(request,"selector")?).map_err(|_| "Invalid selector")?;
             evaluate(&window, &format!(r#"
 const e=unique({selector});if(!visible(e)) throw new Error('Element is not visible');
-if(fixture){{if(!['fixture-button','fixture-auth'].includes(e.id)) throw new Error('Only fixture test buttons are allowed');e.click();return {{clicked:true}};}}
+if(fixture){{if(!['fixture-button','fixture-auth','fixture-upload-mode','fixture-upload-progress','fixture-auto-prompt','fixture-tutorial-prompt','fixture-canvas-mode','fixture-canvas-clock'].includes(e.id)) throw new Error('Only fixture test buttons are allowed');e.click();return {{clicked:true}};}}
 const a=e.closest('a[href]');if(!a) throw new Error('Only safe navigation links are supported');
 const u=new URL(a.href,location.href);
 if(u.protocol!=='https:' || !['www.tiktok.com','tiktok.com','studio.tiktok.com'].includes(u.hostname) || !(u.pathname==='/' || /^\/(@|search|foryou|following|explore|tiktokstudio\/upload|creator-center\/upload)/.test(u.pathname))) throw new Error('Not a safe navigation link');
@@ -196,6 +197,39 @@ else if(e instanceof HTMLInputElement || e instanceof HTMLTextAreaElement){{
         "profile-confirm-name" => evaluate(&window, &crate::profile_scripts::confirm_name(), limits, true),
         "profile-crop" => evaluate(&window, &crate::profile_scripts::crop_apply(), limits, true),
         "profile-crop-inspect" => evaluate(&window, &crate::profile_scripts::crop_inspect(), limits, true),
+        "upload-inspect" => evaluate(&window, &crate::publish_scripts::inspect(), limits, true),
+        "upload-diagnostics" => evaluate(&window, &crate::publish_scripts::diagnostics(), limits, true),
+        "upload-prepare" => evaluate(&window, &crate::publish_scripts::prepare_editor(), limits, true),
+        "publication-status" => evaluate(&window, &crate::publish_scripts::publication_inspect(), limits, true),
+        "upload-caption" => {
+            let text=request.get("text").and_then(Value::as_str).ok_or("Missing caption")?;
+            let prepared=evaluate(&window,&crate::publish_scripts::caption_prepare_native(text)?,limits,true)?;
+            if prepared.get("nativeInputPrepared").and_then(Value::as_bool)!=Some(true) {
+                return Err("Upload caption native preparation could not be verified".into());
+            }
+            // A separate native input event lets controlled editors reconcile
+            // selection without mutating Draft.js's managed DOM directly.
+            std::thread::sleep(Duration::from_millis(120));
+            cdp(&window,"Input.insertText",json!({"text":text}),limits)?;
+            std::thread::sleep(Duration::from_millis(250));
+            let checked=evaluate(&window,&crate::publish_scripts::caption_matches(text)?,limits,true)?;
+            if checked.get("matches").and_then(Value::as_bool)!=Some(true) {
+                return Err("Upload caption readback did not match; inspect before retrying".into());
+            }
+            Ok(json!({"captionFilled":true,"readbackMatches":true,"lengthUtf16":text.encode_utf16().count(),"inputMethod":"native Input.insertText","published":false}))
+        }
+        "upload-caption-check" | "publish-video" => {
+            let text=request.get("text").and_then(Value::as_str).ok_or("Missing expected caption")?;
+            let body=match command {
+                "upload-caption-check"=>crate::publish_scripts::caption_matches(text)?,
+                _=>crate::publish_scripts::publish_request(text)?,
+            };
+            evaluate(&window,&body,limits,true)
+        }
+        "upload-guidance" => {
+            let body=crate::publish_scripts::dismiss_guidance(string(request,"action")?)?;
+            evaluate(&window,&body,limits,true)
+        }
         "profile-avatar" => {
             let path=disk_path(string(request,"path")?)?.canonicalize().map_err(|_| "Avatar file does not exist")?;
             let ext=path.extension().and_then(|v|v.to_str()).unwrap_or("").to_ascii_lowercase();
