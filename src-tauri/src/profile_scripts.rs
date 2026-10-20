@@ -136,14 +136,20 @@ function pOwn(){
  const page=pOne([...document.querySelectorAll('[data-e2e="user-page"]')].filter(visible),'page');
  const edit=pOne([...page.querySelectorAll('button[data-e2e="edit-profile-entrance"]')].filter(e=>visible(e)&&pEditText(pText(e))),'edit entrance');
  const title=pOne([...page.querySelectorAll('[data-e2e="user-title"]')].filter(visible),'username');
- const username=pText(title).replace(/^@/,'');
- if(!username||(!fixture&&username.toLowerCase()!==match[1].toLowerCase()))throw new Error('Profile page identity does not match its URL');
- return {page,edit,username};
+ const subtitle=pOne([...page.querySelectorAll('[data-e2e="user-subtitle"]')].filter(visible),'username');
+ const primary=pText(title),secondary=pText(subtitle);
+ // TikTok's visible title/subtitle roles change after a nickname is set.
+ // Establish identity from the route and either explicit public heading.
+ const username=fixture?(page.dataset.fixtureUsername||primary.replace(/^@/,'')):match[1];
+ const isHandle=s=>s.replace(/^@/,'').toLowerCase()===username.toLowerCase();
+ if(!username||(!isHandle(primary)&&!isHandle(secondary)))throw new Error('Profile page identity does not match its URL');
+ const displayname=isHandle(secondary)?primary:secondary;
+ return {page,edit,username,displayname};
 }
 function pPublic(own){
  const read=sel=>{const es=[...own.page.querySelectorAll(sel)].filter(visible);return es.length===1?pText(es[0]):null;};
  const images=[...own.page.querySelectorAll('[data-e2e="user-avatar"] img')].filter(visible);
- return {username:own.username,displayname:read('[data-e2e="user-subtitle"]'),bio:read('[data-e2e="user-bio"]'),avatarPresent:images.length>0};
+ return {username:own.username,displayname:own.displayname,bio:read('[data-e2e="user-bio"]'),avatarPresent:images.length>0};
 }
 function pTitledDialogs(titleTest){
  const explicit=[...document.querySelectorAll('[role=dialog],[aria-modal=true],dialog[open]')].filter(e=>visible(e)&&[...e.querySelectorAll('h1,h2,h3,[role=heading],div,span')].some(h=>visible(h)&&titleTest(pText(h))));

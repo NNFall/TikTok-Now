@@ -114,6 +114,8 @@ The profile commands operate only on the recognized **current own-profile page**
 
 `profile-set` accepts `displayname` (aliases `display-name` and `name`), `bio`, and `username`. It fills one form field and does not click Save. Local bounds are 30 UTF-16 units for the display name, 80 for the bio, and 24 for the username; the live form's `maxlength` is checked too. These bounds are conservative client validation, not a guarantee that TikTok will accept a value. Username examples must use ASCII letters, digits, underscores, or periods, and cannot end in a period.
 
+Profile readback matches the handle in the current profile URL against the observed title/subtitle fields. It supports either observed ordering of display name and username instead of assuming that a single DOM field always represents the handle.
+
 `profile-inspect` reads the recognized public fields inside the open edit form. Unlike the generic snapshot, it deliberately includes display name, bio, and username values so the caller can review changes before saving. Unknown inputs are not dumped. After the form closes, use `profile-readback` to read the public own-profile values; it requires the own-profile edit entrance to be visible again.
 
 
@@ -169,10 +171,10 @@ A timeout cannot undo an action that already began. After an uncertain result, i
 Windows verification on 20 October 2026 recorded:
 
 - **20 release unit tests passed:** external URL schemes, CLI/profile-command validation, paths, limits, JavaScript quoting, sanitization, and a real native named-pipe round trip, shutdown, and stale descriptor.
-- **34 local WebView integration checks passed:** snapshots, input events, safe navigation, PNG output, synthetic file and avatar selection, profile fields, nickname confirmation, crop/save/readback stages, and guarded rejections. No test file was transmitted.
+- **36 local WebView integration checks passed:** both profile title/subtitle orders, snapshots, input events, safe navigation, PNG output, synthetic file and avatar selection, profile fields, nickname confirmation, crop/save/readback stages, and guarded rejections. No test file was transmitted.
 - **Live readback:** own-profile navigation, visible edit-profile indicators, screenshots, restoration of the existing window, and a loaded upload form.
-- **Separate live profile-edit observation:** form fields, image selection, crop, and nickname confirmation were exercised. TikTok then displayed authentication/sign-up UI. Persisted profile changes were not verified before manual sign-in, and authentication was not automated.
-- **Not established by those checks:** persisted live profile changes after that authentication prompt; real user-video transfer, processing or publication; indefinite login persistence; cross-platform compatibility of the additions.
+- **Separate live profile-edit observation:** form fields, avatar selection/crop, and nickname confirmation were exercised. Authentication/sign-up UI appeared during the save flow. After the user fully quit and reopened the app, the signed-in own profile was re-read and the intended display name, bio, and avatar were present. That later observation established persistence across that restart; authentication was not automated.
+- **Not established by those checks:** real user-video transfer, processing or publication; indefinite login or profile persistence; cross-platform compatibility of the additions.
 
 The fixture assets are `frontend/control-fixture.html` and `frontend/control-fixture.js`. Run the app with `--control-test` only in an isolated test environment: it uses a separate WebView profile, but the same-user transport must not be shared with a live control instance.
 

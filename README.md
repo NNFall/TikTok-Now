@@ -87,12 +87,12 @@ Windows verification on 20 October 2026:
 | Check | Observed result |
 |---|---|
 | Rust release unit tests | **20 passed**, including URL guards, command validation, profile-field limits, JavaScript quoting, sanitized errors, and a real named-pipe round trip. |
-| Isolated local WebView fixture | **34 checks passed**, including navigation, PNG/file readback, profile fields, nickname confirmation, avatar selection, crop/save/readback stages, and guarded-action rejections. |
+| Isolated local WebView fixture | **36 checks passed**, including both profile title/subtitle orders, navigation, PNG/file readback, profile fields, nickname confirmation, avatar selection, crop/save/readback stages, and guarded-action rejections. |
 | Live TikTok readback | Profile navigation, own-profile indicators, snapshots, screenshots, and window restoration were observed. |
 | Live upload page | The upload form was observed; a real user video was not sent as part of that verification. |
-| Live profile edit | Field staging, image selection, crop, and nickname confirmation were observed. TikTok then showed authentication/sign-up UI; persistence remained unverified pending manual sign-in. |
+| Live profile edit | Field staging, avatar selection/crop, and nickname confirmation were observed. After a full app quit/restart, the signed-in own profile showed the intended display name, bio, and avatar. |
 
-The 34 automated profile/control checks use an isolated local fixture. The separate live profile-edit observation does not establish a successful persisted save. These are bounded observations, not a guarantee of account availability, permanent login, upload success, or support for future TikTok DOM changes. Local screenshots, logs, profile data, and transport credentials are excluded from this public source tree.
+The automated profile/control checks use an isolated local fixture. Separate live readback after a full app restart confirmed the requested profile changes. Authentication/sign-up UI had appeared during the earlier save flow; it was not treated as a successful save until the later signed-in profile was actually read. These are bounded observations, not a guarantee of account availability, permanent login, upload success, or support for future TikTok DOM changes. Local screenshots, logs, profile data, and transport credentials are excluded from this public source tree.
 
 ## Build requirements
 
