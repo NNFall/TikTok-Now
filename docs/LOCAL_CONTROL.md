@@ -115,6 +115,8 @@ These commands operate on recognized ordinary TikTok upload routes:
 
 `upload-prepare` only scrolls the recognized caption editor into view. It does not change caption text, visibility, scheduling, or content-check preferences. `upload-caption` prepares and focuses the recognized caption editor, inserts text through WebView2's native `Input.insertText` path, and performs a separate exact readback. Draft.js block text is read with its line breaks preserved; the command does not insert raw HTML. `upload-caption-check` compares the current caption with the supplied text and returns a boolean plus lengths without dumping its contents.
 
+A live editor focus/reconciliation can leave pre-existing text, such as an initial filename prefix. Exact readback rejects that state. Inspect the current editor before any intentional further entry; an observed success required an exact match after that inspection. The command does not automatically repeat native insertion.
+
 The local caption limit is 2,200 UTF-16 units, with a nonempty value required; the live field's maximum is checked too. This is a conservative client bound, not a statement of TikTok's current service limit.
 
 Two fixed guidance actions are supported when their specific recognized panels are present:
@@ -148,8 +150,10 @@ Before dispatch, the command requires:
 
 The preview predicate accepts either:
 
-- A displayed HTML video with `readyState >= 2`, positive duration, and positive decoded frame dimensions.
-- Exactly one displayed `mobile_preview_container` containing exactly one displayed canvas with positive dimensions, exactly one parseable `HH:MM:SS / HH:MM:SS` clock pair with a positive total duration and current time within its range, and recognized play/pause plus mute/unmute controls.
+- A displayed HTML video **inside the unique recognized `mobile_preview_container`**, with `readyState >= 2`, positive duration, and positive decoded frame dimensions. Tutorial or advertisement videos elsewhere in Studio do not qualify.
+- Exactly one displayed `mobile_preview_container` containing exactly one displayed canvas with positive dimensions, exactly one parseable `HH:MM:SS / HH:MM:SS` clock pair with a positive total duration and current time within its range, and exact play/pause plus mute/unmute labels from that player's DOM schema.
+
+Those control labels may be auto-hidden by the player. Their exact DOM labels identify the recognized schema; they do not establish that a control is currently visible, enabled, or a valid click target. The preview container and canvas themselves must still be displayed.
 
 The canvas route establishes **recognized player UI readiness**, not an HTML video's decoder state or a pixel analysis of the film frame. A generic canvas, ambiguous container/canvas/clock, zero total duration, or missing player controls is not sufficient. Uploaded-file labels and filenames are available in diagnostics; they are observations rather than a new-publication receipt.
 The pending marker is set **before** clicking. A successful command receipt reports `publicationRequested: true` and `published: false`: it establishes a request, not a completed publication. The marker prevents another request in that document, not duplicate posts across reloads or restarts. A timeout or thrown click can be uncertain; inspect the result before considering any further action. There is no automatic retry.
@@ -230,12 +234,13 @@ A timeout cannot undo an action that already began. After an uncertain result, i
 
 Windows verification on 20 October 2026 recorded:
 
-- **26 full release unit tests passed on the preceding release, before the final canvas-preview JavaScript adaptation:** external URL schemes, typed CLI/profile/publication-command validation, caption/profile limits, paths, JavaScript quoting, sanitization, and a real native named-pipe round trip, shutdown, and stale descriptor.
-- **Final publication-module checks passed after that adaptation:** 5 standalone Rust tests, 57 mock-DOM checks, and 9 JavaScript syntax checks. This is a separate scope from the preceding full Rust run.
-- **63 native WebView fixture checks passed against the final installed Windows GUI:** native multiline caption insertion, recognized canvas readiness and zero-total-clock rejection, typed publication guards, both profile title/subtitle orders, snapshots, safe navigation, PNG output, synthetic file/avatar selection, profile fields, nickname confirmation, crop/save/readback stages, and guarded rejections. No fixture file was transmitted or posted.
+- **26 full release unit tests passed on an earlier release, before the canvas/player-scope JavaScript adaptations:** external URL schemes, typed CLI/profile/publication-command validation, caption/profile limits, paths, JavaScript quoting, sanitization, and a real native named-pipe round trip, shutdown, and stale descriptor.
+- **Final publication-module checks passed after that adaptation:** 5 standalone Rust tests, 61 mock-DOM checks, and 9 JavaScript syntax checks. This is a separate scope from the preceding full Rust run.
+- **63 native WebView fixture checks passed against the corrected final installed Windows GUI:** a ready decoded tutorial video outside the upload preview is rejected; a zero-total clock is rejected; a recognized canvas with auto-hidden control labels is accepted. The same run covers native multiline captions, typed publication guards, both profile field orders, snapshots, safe navigation, PNG output, synthetic file/avatar selection, and crop/save/readback stages. No fixture file was transmitted or posted.
 - **Live readback:** own-profile navigation, edit-profile indicators, screenshots, window restoration, and the upload form. The selected-video preview and native caption text were observed with exact caption comparisons, including another successful read more than two minutes later. These observations did not establish publication.
 - **Separate live profile-edit observation:** form fields, avatar selection/crop, and nickname confirmation were exercised. Authentication/sign-up UI appeared during the save flow. After the user fully quit and reopened the app, the signed-in own profile was re-read and the intended display name, bio, and avatar were present. That later observation established persistence across that restart; authentication was not automated.
-- **Not established by those checks:** completed transfer, processing or publication of a real user video; indefinite login or profile persistence; cross-platform compatibility of the additions.
+- **Separate live publication observation on the earlier installed development build:** before the single authorized publication, the operator separately reviewed uploaded status, the exact selected filename, film frame/canvas and clock, and the expected caption. Service success plus own-profile playback, caption, and new-video-link readback then confirmed that post. This action preceded the final preview-scope correction. The corrected build's readiness behavior is supported by the isolated regression checks above, rather than that earlier live action.
+- **Not established by those checks:** indefinite login, profile or post availability; copyright clearance; cross-platform compatibility of the additions.
 
 The fixture assets are `frontend/control-fixture.html` and `frontend/control-fixture.js`. Run the app with `--control-test` only in an isolated test environment: it uses a separate WebView profile, but the same-user transport must not be shared with a live control instance.
 

@@ -29,6 +29,9 @@ document.querySelector('[data-e2e="set-username-popup-confirm"]').addEventListen
 Object.defineProperties(document.querySelector('#fixture-video'),{
  readyState:{get:()=>3},duration:{get:()=>12},videoWidth:{get:()=>270},videoHeight:{get:()=>480}
 });
+Object.defineProperties(document.querySelector('#fixture-unrelated-video'),{
+ readyState:{get:()=>4},duration:{get:()=>2.066667},videoWidth:{get:()=>720},videoHeight:{get:()=>816}
+});
 document.querySelector('#fixture-upload-mode').addEventListener('click',()=>{
  document.querySelector('#fixture-basic-caption').hidden=true;
  document.querySelector('#publish').hidden=true;

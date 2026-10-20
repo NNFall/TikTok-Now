@@ -25,9 +25,10 @@
 <p data-e2e="set-username-popup-title">Установить никнейм?</p>
 <p data-e2e="set-username-popup-desc">Никнейм можно менять не чаще, чем раз в 7 дн.</p>
 <button data-e2e="set-username-popup-confirm" type="button">Подтвердить</button></div>
+<video id="fixture-unrelated-video" style="width:50px;height:50px" muted></video>
 <button id="fixture-upload-mode" type="button">Show local upload form</button>
 <section id="fixture-upload" hidden>
-<div data-e2e="mobile_preview_container"><video id="fixture-video" style="width:80px;height:80px"></video><div id="fixture-canvas-player" hidden><canvas width="1080" height="1440" style="width:80px;height:100px"></canvas><span id="fixture-clock">00:00:00 / 00:01:02</span><button type="button">Воспроизвести</button><button type="button">Заглушить</button><button type="button">Развернуть</button></div></div>
+<div data-e2e="mobile_preview_container"><video id="fixture-video" style="width:80px;height:80px"></video><div id="fixture-canvas-player" hidden><canvas width="1080" height="1440" style="width:80px;height:100px"></canvas><span id="fixture-clock">00:00:00 / 00:01:02</span><div style="opacity:0"><button type="button">Воспроизвести</button><button type="button">Заглушить</button><button type="button">Развернуть</button></div></div></div>
 <div><label id="fixture-upload-label">Описание</label><div id="fixture-upload-caption" class="public-DraftEditor-content" aria-labelledby="fixture-upload-label" contenteditable="true" style="min-height:60px;width:500px;border:1px solid">Default local caption</div></div>
 <button id="fixture-post" data-e2e="post_video_button" type="button">Опубликовать</button>
 <button id="fixture-upload-progress" type="button">Toggle simulated progress</button>

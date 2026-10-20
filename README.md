@@ -92,12 +92,12 @@ Windows verification on 20 October 2026:
 
 | Check | Observed result |
 |---|---|
-| Full Rust release unit tests | **26 passed** on the preceding release, before the final canvas-preview JavaScript adaptation. |
-| Final publication-module checks | **5** standalone Rust tests, **57** mock-DOM checks, and **9** JavaScript syntax checks passed after that adaptation. |
-| Latest installed Windows WebView fixture | **63 checks passed**, including native multiline captions, recognized canvas readiness/zero-clock rejection, publication guards, profile fields, PNG/file readback, and crop/save/readback stages. |
+| Full Rust release unit tests | **26 passed** on an earlier release, before the canvas/player-scope JavaScript adaptations. |
+| Final publication-module checks | **5** standalone Rust tests, **61** mock-DOM checks, and **9** JavaScript syntax checks passed after that adaptation. |
+| Corrected installed Windows WebView fixture | **63 checks passed**, including unrelated-video and zero-clock rejection, canvas readiness with auto-hidden control labels, native multiline captions, publication guards, profile fields, and file/PNG readback. |
 | Live TikTok readback | Profile navigation, own-profile indicators, snapshots, screenshots, and window restoration were observed. |
 | Live upload page | The selected-video preview and exact native caption readback were observed, including a later read after more than two minutes. The input can reset after selection; final publication still requires separate post readback. |
-| Live publication | Not established by the reported upload/fixture checks. A publication request and a verified new post are separate outcomes. |
+| Live publication | One authorized post from the earlier installed build was confirmed by service success and own-profile playback/caption/new-link readback, after separate operator review of uploaded status, filename, frame/clock, and exact caption. The final corrected readiness predicate has separate isolated regression coverage. |
 | Live profile edit | Field staging, avatar selection/crop, and nickname confirmation were observed. After a full app quit/restart, the signed-in own profile showed the intended display name, bio, and avatar. |
 
 The automated profile/control checks use an isolated local fixture. Separate live readback after a full app restart confirmed the requested profile changes. Authentication/sign-up UI had appeared during the earlier save flow; it was not treated as a successful save until the later signed-in profile was actually read. These are bounded observations, not a guarantee of account availability, permanent login, upload success, or support for future TikTok DOM changes. Local screenshots, logs, profile data, and transport credentials are excluded from this public source tree.

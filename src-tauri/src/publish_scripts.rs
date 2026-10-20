@@ -195,24 +195,29 @@ function uCanvasPreviews(){
   const canvases=[...container.querySelectorAll('canvas')].filter(uDisplayed);
   const clocks=[...uText(container).matchAll(/\b(\d{2}:\d{2}:\d{2})\s*\/\s*(\d{2}:\d{2}:\d{2})\b/g)];
   const current=clocks.length===1?uClockSeconds(clocks[0][1]):null,duration=clocks.length===1?uClockSeconds(clocks[0][2]):null;
-  const labels=[...container.querySelectorAll('button,[role=button],[aria-label],[title],span,div')].filter(uDisplayed).flatMap(e=>[uText(e),e.getAttribute('aria-label')||'',e.getAttribute('title')||'']).map(s=>s.trim());
+  // The observed player auto-hides its hover control labels. Their exact DOM
+  // labels establish this known player schema; they do not claim that those
+  // controls are currently visible, enabled, or safe targets for a click.
+  const labels=[...container.querySelectorAll('button,[role=button],[aria-label],[title],span,div')].flatMap(e=>[uText(e),e.getAttribute('aria-label')||'',e.getAttribute('title')||'']).map(s=>s.trim());
   const play=labels.some(s=>/^(Воспроизвести|Пауза|Play|Pause)$/i.test(s));
   const mute=labels.some(s=>/^(Заглушить|Включить звук|Выключить звук|Mute|Unmute)$/i.test(s));
   for(const canvas of canvases.slice(0,4)){
    const canvasPreviewReady=containers.length===1&&canvases.length===1&&canvas.width>0&&canvas.height>0&&clocks.length===1&&duration!==null&&duration>0&&current!==null&&current>=0&&current<=duration&&play&&mute;
-   result.push({kind:'canvas',canvasWidth:canvas.width,canvasHeight:canvas.height,containerCount:containers.length,canvasCount:canvases.length,clockCount:clocks.length,currentTimeLabel:clocks.length===1?clocks[0][1]:null,durationLabel:clocks.length===1?clocks[0][2]:null,duration,current,controls:{play,mute},inViewport:visible(canvas),canvasPreviewReady});
+   result.push({kind:'canvas',canvasWidth:canvas.width,canvasHeight:canvas.height,containerCount:containers.length,canvasCount:canvases.length,clockCount:clocks.length,currentTimeLabel:clocks.length===1?clocks[0][1]:null,durationLabel:clocks.length===1?clocks[0][2]:null,duration,current,controls:{play,mute,schemaEvidenceOnly:true},inViewport:visible(canvas),canvasPreviewReady});
   }
  }
  return result;
 }
 function uPreviews(){
- const videos=[...document.querySelectorAll('video')].filter(uDisplayed).map(e=>({kind:'video',readyState:e.readyState,duration:Number.isFinite(e.duration)?e.duration:null,width:e.videoWidth,height:e.videoHeight,paused:e.paused,muted:e.muted,inViewport:visible(e)}));
+ const containers=[...document.querySelectorAll('[data-e2e="mobile_preview_container"]')].filter(uDisplayed);
+ // Tutorial/advertisement videos elsewhere in Studio are not upload evidence.
+ const videos=containers.length===1?[...containers[0].querySelectorAll('video')].filter(uDisplayed).map(e=>({kind:'video',readyState:e.readyState,duration:Number.isFinite(e.duration)?e.duration:null,width:e.videoWidth,height:e.videoHeight,paused:e.paused,muted:e.muted,inViewport:visible(e)})):[];
  return [...videos,...uCanvasPreviews()];
 }
 const uPreviewReady=p=>p.kind==='canvas'?p.canvasPreviewReady===true:p.kind==='video'&&p.readyState>=2&&p.duration>0&&p.width>0&&p.height>0;
 function uUploadFileLabels(){
- const labels=[...document.querySelectorAll('h1,h2,h3,h4,p,span,div')].filter(e=>uDisplayed(e)&&e.children.length<=1).map(uText).filter(s=>s.length>0&&s.length<=255);
- return {statusLabels:[...new Set(labels.filter(s=>/^(?:Загружено|Uploaded)(?:\s*\([\d.,]+\s*(?:B|KB|MB|GB|байт|КБ|МБ|ГБ)\))?[.!]?$/i.test(s)))].slice(0,6),filenameLabels:[...new Set(labels.filter(s=>/^[^/\\<>\r\n]{1,240}\.(?:mp4|mov|m4v|webm)$/i.test(s)))].slice(0,6)};
+ const labels=[...document.querySelectorAll('h1,h2,h3,h4,p,span,div')].filter(e=>uDisplayed(e)&&e.children.length<=4).map(uText).filter(s=>s.length>0&&s.length<=255);
+ return {statusLabels:[...new Set(labels.filter(s=>/^(?:Загружено|Uploaded)\s*(?:\(\s*[\d.,]+\s*(?:B|KB|MB|GB|байт|КБ|МБ|ГБ)\s*\))?\s*[.!]?$/i.test(s)))].slice(0,6),filenameLabels:[...new Set(labels.filter(s=>/^[^/\\<>\r\n]{1,240}\.(?:mp4|mov|m4v|webm)$/i.test(s)))].slice(0,6)};
 }
 function uState(){
  const captions=uCaptionCandidates(),buttons=uPublishButtons(),previews=uPreviews(),progress=uProgress();
