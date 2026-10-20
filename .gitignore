@@ -48,3 +48,23 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+
+# Local-control runtime state and private browser profiles
+**/endpoint.json
+*.session
+*.session-journal
+*.session-shm
+*.session-wal
+**/control-test-profile/
+**/EBWebView/
+**/WebView2/
+**/User Data/
+**/BrowserMetrics/
+
+# Local verification outputs and alternate Cargo targets
+/build-target/
+/target/
+/reports/
+/screenshots/
+/captures/
+/local-artifacts/

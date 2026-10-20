@@ -8,6 +8,11 @@ use tauri::Url;
 /// any string straight to `open::that`.)
 const ALLOWED_SCHEMES: [&str; 3] = ["http", "https", "mailto"];
 
+/// Shared by the command and new-window router before invoking the OS opener.
+pub(crate) fn is_allowed_external_url(url: &Url) -> bool {
+    ALLOWED_SCHEMES.contains(&url.scheme())
+}
+
 /// Open a URL in the OS default browser / handler.
 ///
 /// Called from the injected page engine (`window.__tiktoknow_open`) for every
@@ -18,11 +23,43 @@ pub async fn jump_to_external(url: String) -> Result<()> {
     let parsed =
         Url::parse(&url).map_err(|e| crate::error::AppError::Custom(format!("invalid URL: {e}")))?;
     let scheme = parsed.scheme().to_ascii_lowercase();
-    if !ALLOWED_SCHEMES.contains(&scheme.as_str()) {
+    if !is_allowed_external_url(&parsed) {
         return Err(crate::error::AppError::Custom(format!(
             "scheme '{scheme}' is not allowed for external opening"
         )));
     }
     open::that(parsed.as_str()).map_err(|e| crate::error::AppError::Custom(e.to_string()))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_allowed_external_url;
+    use tauri::Url;
+
+    #[test]
+    fn external_url_allows_web_and_email_schemes() {
+        for url in [
+            "http://example.com/path",
+            "https://example.com/path",
+            "HTTPS://example.com/path",
+            "mailto:user@example.com",
+        ] {
+            assert!(is_allowed_external_url(&Url::parse(url).unwrap()), "{url}");
+        }
+    }
+
+    #[test]
+    fn external_url_rejects_executable_local_and_custom_schemes() {
+        for url in [
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "file:///C:/Windows/System32/cmd.exe",
+            "vbscript:msgbox(1)",
+            "ms-settings:privacy",
+            "tiktok://user/profile",
+        ] {
+            assert!(!is_allowed_external_url(&Url::parse(url).unwrap()), "{url}");
+        }
+    }
 }

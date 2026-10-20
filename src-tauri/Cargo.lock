@@ -3305,12 +3305,15 @@ dependencies = [
 name = "tiktok-now"
 version = "2.1.0"
 dependencies = [
+ "base64 0.22.1",
  "open",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-autostart",
  "thiserror 1.0.69",
+ "webview2-com",
  "windows",
 ]
 

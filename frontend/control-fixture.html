@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-control-fixture="true"><head><meta charset="utf-8"><title>TikTok-Now local control test</title></head>
+<body><h1>Local control fixture</h1><p>This page does not send files to any service.</p>
+<label>Caption <input id="caption" type="text"></label>
+<button id="fixture-button" type="button">Test navigation action</button>
+<button id="fixture-auth" type="button">Show simulated login dialog</button>
+<button id="publish" type="submit"><span id="publish-child">Publish</span></button>
+<input id="fixture-file" type="file" accept="video/*">
+<output id="fixture-result" data-e2e="fixture-result">Not clicked</output>
+<output id="fixture-caption" data-e2e="fixture-caption">Caption characters: 0</output>
+<section data-e2e="user-page">
+<h2 data-e2e="user-title">your_handle</h2><h3 data-e2e="user-subtitle">Movie Demo</h3>
+<p data-e2e="user-bio">Original public bio</p><span data-e2e="user-avatar"></span>
+<button data-e2e="edit-profile-entrance" type="button">Edit profile</button>
+</section>
+<div id="fixture-profile" role="dialog" hidden><h2>Edit profile</h2>
+<label>Name <input id="fixture-name" type="text" maxlength="30" value="Movie Demo"></label>
+<label>Username <input id="fixture-username" type="text" maxlength="24" value="your_handle"></label>
+<label>Bio <textarea id="fixture-bio" maxlength="80">Original public bio</textarea></label>
+<input id="fixture-avatar" type="file" accept=".jpg,.jpeg,.png,.tiff,.heic,.webp" hidden>
+<button id="fixture-save" type="button">Save</button></div>
+<div id="fixture-crop" hidden><p>Изменить фото</p>
+<canvas width="20" height="20"></canvas><button id="fixture-apply" type="button">Подать заявку</button></div>
+<div data-e2e="set-username-popup" id="fixture-confirm" hidden>
+<p data-e2e="set-username-popup-title">Установить никнейм?</p>
+<p data-e2e="set-username-popup-desc">Никнейм можно менять не чаще, чем раз в 7 дн.</p>
+<button data-e2e="set-username-popup-confirm" type="button">Подтвердить</button></div>
+<div id="fixture-login" role="dialog" hidden><h2>Log in</h2><input type="tel" autocomplete="one-time-code"></div>
+<script src="control-fixture.js"></script>
+</body></html>

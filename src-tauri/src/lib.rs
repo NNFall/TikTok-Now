@@ -4,6 +4,12 @@ mod commands;
 mod error;
 mod geometry;
 mod tray;
+#[cfg(windows)]
+pub mod control_transport;
+#[cfg(windows)]
+mod control_webview;
+#[cfg(windows)]
+mod profile_scripts;
 
 use std::sync::{
     atomic::{AtomicBool, AtomicU32, Ordering},
@@ -141,6 +147,15 @@ fn is_tiktok_host(url: &tauri::Url) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(windows)]
+    if std::env::args().any(|arg|arg=="--control") && !std::env::args().any(|arg|arg=="--control-test") {
+        // Reopening the automation shortcut restores its existing window.
+        // Do not start a second WebView using the same live user profile.
+        if let Ok(reply)=control_transport::send_request(serde_json::json!({"command":"show"})) {
+            if reply.get("ok").and_then(serde_json::Value::as_bool)==Some(true)
+                && reply.pointer("/data/fixture").and_then(serde_json::Value::as_bool)==Some(false) { return; }
+        }
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -159,13 +174,22 @@ pub fn run() {
 
             // Launch hidden to tray when started by the OS autostart feature.
             let start_minimized = std::env::args().any(|arg| arg == "--minimized");
+            let control_fixture = std::env::args().any(|arg| arg == "--control-test");
+            let control_enabled = control_fixture || std::env::args().any(|arg| arg == "--control");
+
+            let main_url = if control_fixture { "control-fixture.html" } else { "index.html" };
+            let mut window_builder = tauri::WebviewWindowBuilder::new(
+                app, "main", tauri::WebviewUrl::App(main_url.into()),
+            );
+            if control_fixture {
+                // The fixture has its own WebView profile and cannot touch the live session.
+                let profile = std::env::current_exe()?.parent().ok_or("Missing executable directory")?
+                    .join("control-test-profile");
+                window_builder = window_builder.data_directory(profile);
+            }
 
             // ── Main Window with Native Dark Canvas Background (#0D0E15) ─────────
-            let _window = tauri::WebviewWindowBuilder::new(
-                app,
-                "main",
-                tauri::WebviewUrl::App("index.html".into()),
-            )
+            let _window = window_builder
             .title("TikTok-Now")
             // v2.1.0: 1326 × 1032 — exactly fits the visible frame between the
             // screen top and the Windows taskbar on the reference machine
@@ -188,7 +212,6 @@ pub fn run() {
             // gesture, so TikTok starts muted on every fresh launch).
             .additional_browser_args(
                 "--enable-features=msTranslate \
-                 --disable-features=msSmartScreenProtection \
                  --no-first-run \
                  --autoplay-policy=no-user-gesture-required",
             )
@@ -367,11 +390,18 @@ pub fn run() {
                         Err(_) => NewWindowResponse::Allow,
                     }
                 } else if !is_tiktok {
-                    diag!(
-                        "[TikTok-Now] External hyperlink in new window ({}), launching OS default browser...",
-                        url
-                    );
-                    let _ = open::that(url.as_str());
+                    if commands::auth::is_allowed_external_url(&url) {
+                        diag!(
+                            "[TikTok-Now] External hyperlink in new window ({}), launching OS default browser...",
+                            url
+                        );
+                        let _ = open::that(url.as_str());
+                    } else {
+                        diag!(
+                            "[TikTok-Now] Refused external URL scheme in new window: {}",
+                            url.scheme()
+                        );
+                    }
                     NewWindowResponse::Deny
                 } else {
                     NewWindowResponse::Allow
@@ -379,6 +409,15 @@ pub fn run() {
             })
             .build()
             .expect("Failed to build TikTok-Now main window");
+
+            #[cfg(windows)]
+            if control_enabled {
+                let control_app = app.handle().clone();
+                let server = control_transport::start_server(Arc::new(move |request| {
+                    control_webview::handle_request(&control_app, request, control_fixture)
+                })).map_err(std::io::Error::other)?;
+                app.manage(server);
+            }
 
             // v2.1.0: exact work-area fit (1326 × 1032 on the reference
             // machine) — applied after the window exists, measuring the REAL

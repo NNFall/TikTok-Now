@@ -13,6 +13,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 name = "TikTok-Now"
 path = "src/main.rs"
 
+[[bin]]
+name = "tiktok-now-ctl"
+path = "src/control_cli.rs"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -21,6 +25,8 @@ tauri = { version = "2", features = ["tray-icon", "devtools"] }
 tauri-plugin-autostart = "2"
 
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "=0.22.1"
 
 thiserror = "1"
 open = "5.3"
@@ -38,6 +44,7 @@ open = "5.3"
 # non-Windows code paths fail to compile against windows-core 0.61 (imp module
 # is #[cfg(windows)]). Ungated, it broke the macOS/Linux CI builds.
 [target.'cfg(windows)'.dependencies]
+webview2-com = "=0.38.2"
 windows = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",
@@ -45,6 +52,13 @@ windows = { version = "0.61", features = [
     "Win32_Media_Audio_Endpoints",
     "Win32_System_Com",
     "Win32_System_Diagnostics_ToolHelp",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
 ] }
 
 [profile.release]
